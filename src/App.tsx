@@ -1,4 +1,4 @@
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {
   App as WearablesApp,
   Button,
@@ -16,6 +16,21 @@ import {milestoneFor, milestoneMessage, motivation} from './steps';
 import {useStepCounter, type Tracking} from './useStepCounter';
 
 const fmt = (n: number) => n.toLocaleString();
+
+// Where the square sits inside the display. "Move" cycles in this order.
+const CORNERS = ['top-right', 'bottom-right', 'bottom-left', 'top-left'] as const;
+type Corner = (typeof CORNERS)[number];
+const CORNER_KEY = 'stepcoach.corner';
+
+function loadCorner(): Corner {
+  try {
+    const saved = localStorage.getItem(CORNER_KEY);
+    if (saved && (CORNERS as readonly string[]).includes(saved)) return saved as Corner;
+  } catch {
+    // Storage blocked: use the default.
+  }
+  return 'top-right';
+}
 const countOf = (n: number, singular: string, plural: string) =>
   `${fmt(n)} ${n === 1 ? singular : plural}`;
 
@@ -69,6 +84,21 @@ export default function App() {
     milestone.current.value = reached;
   }, [steps, goal, demo]);
 
+  const [corner, setCorner] = useState<Corner>(loadCorner);
+  const moveToast = useRef<number | null>(null);
+  const handleMove = () => {
+    const next = CORNERS[(CORNERS.indexOf(corner) + 1) % CORNERS.length];
+    setCorner(next);
+    try {
+      localStorage.setItem(CORNER_KEY, next);
+    } catch {
+      // Storage blocked: the position still changes for this session.
+    }
+    // Replace the previous "Moved to…" toast so quick presses never show a stale corner.
+    if (moveToast.current !== null) Toast.cancel(moveToast.current);
+    moveToast.current = Toast.show(`Moved to ${next.replace('-', ' ')}`);
+  };
+
   const running = tracking === 'counting' || tracking === 'starting';
   const handlePrimary = () => {
     if (running) {
@@ -83,7 +113,7 @@ export default function App() {
       <Page showHeader={false} enableSystemBarInset={false}>
         {/* Everything sits in a narrow column in the top-right corner. Black is
             see-through on the glasses, so the rest of the display stays clear. */}
-        <div className="side-layout">
+        <div className={`side-layout corner-${corner}`}>
         <div className="action-page-shell">
           <GoalRing fraction={steps / goal} />
           <ScrollView ariaLabel="Today's step progress" tabIndex={0}>
@@ -116,6 +146,7 @@ export default function App() {
                 title={demo ? 'Exit' : 'Demo'}
                 onClick={demo ? coach.endDemo : coach.startDemo}
               />
+              <Button title="Move" onClick={handleMove} />
             </ButtonRail>
           </div>
         </div>
