@@ -165,7 +165,7 @@
 
   <section id="bar" aria-label="Preview settings">
     <h1>Look-through preview</h1>
-    <p>An approximation of Meta Ray-Ban Display: glowing, see-through, one small panel in your right eye.</p>
+    <p>An approximation of Meta Ray-Ban Display: a glowing, see-through panel in your right eye, below and right of where you look.</p>
     <div class="row">
       <button class="primary" id="camera">Use camera</button>
       <button id="lensBtn" aria-pressed="true">Lens</button>
@@ -179,9 +179,9 @@
       <label class="slider">Display brightness <input id="brightness" type="range" min="0.3" max="1.6" step="0.05" value="1" /><output></output></label>
       <label class="slider">Sunlight <input id="sun" type="range" min="0.5" max="2" step="0.05" value="1" /><output></output></label>
       <label class="slider">Lens tint <input id="tint" type="range" min="0" max="0.8" step="0.05" value="0" /><output></output></label>
-      <label class="slider">Display size <input id="size" type="range" min="20" max="80" step="1" value="42" /><output></output></label>
-      <label class="slider">Across ↔ <input id="x" type="range" min="0" max="100" step="1" value="60" /><output></output></label>
-      <label class="slider">Up ↕ <input id="y" type="range" min="0" max="100" step="1" value="58" /><output></output></label>
+      <label class="slider">Display size <input id="size" type="range" min="20" max="80" step="1" value="34" /><output></output></label>
+      <label class="slider">Across ↔ <input id="x" type="range" min="0" max="100" step="1" value="72" /><output></output></label>
+      <label class="slider">Up ↕ <input id="y" type="range" min="0" max="100" step="1" value="38" /><output></output></label>
     </div>
     </details>
     <div id="status" role="status"></div>
@@ -192,7 +192,7 @@
   const $ = id => document.getElementById(id);
   const display = $('display'), frame = $('frame'), video = $('world'), scene = $('scene');
   const status = msg => { $('status').textContent = msg; };
-  const SETTINGS_KEY = 'stepcoach.preview.v1';
+  const SETTINGS_KEY = 'stepcoach.preview.v2';
   const sliders = ['brightness', 'sun', 'tint', 'size', 'x', 'y'];
 
   // Restore slider positions (per-viewer convenience only).

@@ -11,7 +11,6 @@ import {
   TextStyle,
   TextView,
   Toast,
-  usePrefersReducedMotion,
 } from '@wearables-ui-toolkit/mrbd';
 import {milestoneFor, milestoneMessage, motivation} from './steps';
 import {useStepCounter, type Tracking} from './useStepCounter';
@@ -25,16 +24,16 @@ function statusText(tracking: Tracking, visible: boolean, demo: boolean): string
     case 'idle':
       return 'Not started';
     case 'starting':
-      return 'Waiting for motion sensor';
+      return 'Waiting for sensor';
     case 'counting':
       if (!visible) return 'Paused while hidden';
-      return demo ? 'Demo · simulated steps' : 'Counting · estimated';
+      return demo ? 'Demo (simulated)' : 'Counting · estimated';
     case 'paused':
       return 'Paused';
     case 'denied':
       return 'Motion access denied';
     case 'no-sensor':
-      return 'No motion sensor found';
+      return 'No motion sensor';
   }
 }
 
@@ -56,7 +55,6 @@ function primaryAction(tracking: Tracking): string {
 export default function App() {
   const coach = useStepCounter();
   const {tracking, visible, demo, steps, goal, yesterday, streak} = coach;
-  const reducedMotion = usePrefersReducedMotion();
   const percent = Math.min(100, Math.floor((steps / goal) * 100));
 
   // Celebrate each 25% of the goal once as it is crossed.
@@ -82,9 +80,12 @@ export default function App() {
 
   return (
     <WearablesApp>
-      <Page headerText="Step Coach" enableSystemBarInset={false}>
+      <Page showHeader={false} enableSystemBarInset={false}>
+        {/* Everything sits in a narrow column on the right edge. Black is
+            see-through on the glasses, so the rest of the display stays clear. */}
+        <div className="side-layout">
         <div className="action-page-shell">
-          <ScrollView insetForHeader ariaLabel="Today's step progress" tabIndex={0}>
+          <ScrollView ariaLabel="Today's step progress" tabIndex={0}>
             <Panel width="100%">
               <div className="content-inset">
                 <TextView as="p" textStyle={TextStyle.BODY2_EMPHASIZED}>
@@ -97,7 +98,7 @@ export default function App() {
                   <ProgressIndicator
                     value={steps}
                     maximumValue={goal}
-                    animated={!reducedMotion}
+                    animated={false}
                     announceUpdatesForAccessibility={false}
                     aria-labelledby="goal-progress"
                   />
@@ -105,23 +106,13 @@ export default function App() {
                 <TextView as="p" textStyle={TextStyle.BODY2}>
                   {motivation(steps, goal, yesterday)}
                 </TextView>
-                <div className="stat-row">
-                  <div className="stat">
-                    <TextView as="p" textStyle={TextStyle.LABEL} textColor={TextColor.SECONDARY}>
-                      STREAK
-                    </TextView>
-                    <TextView as="p" textStyle={TextStyle.META1}>
-                      {countOf(streak, 'day', 'days')}
-                    </TextView>
-                  </div>
-                  <div className="stat">
-                    <TextView as="p" textStyle={TextStyle.LABEL} textColor={TextColor.SECONDARY}>
-                      STATUS
-                    </TextView>
-                    <TextView as="p" textStyle={TextStyle.META1}>
-                      {statusText(tracking, visible, demo)}
-                    </TextView>
-                  </div>
+                <div className="stat">
+                  <TextView as="p" textStyle={TextStyle.META1}>
+                    {streak}-day streak
+                  </TextView>
+                  <TextView as="p" textStyle={TextStyle.META1} textColor={TextColor.SECONDARY}>
+                    {statusText(tracking, visible, demo)}
+                  </TextView>
                 </div>
               </div>
             </Panel>
@@ -130,11 +121,12 @@ export default function App() {
             <ButtonRail>
               <Button title={primaryAction(tracking)} onClick={handlePrimary} />
               <Button
-                title={demo ? 'End demo' : 'Demo'}
+                title={demo ? 'Exit' : 'Demo'}
                 onClick={demo ? coach.endDemo : coach.startDemo}
               />
             </ButtonRail>
           </div>
+        </div>
         </div>
       </Page>
     </WearablesApp>
