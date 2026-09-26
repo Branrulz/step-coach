@@ -81,7 +81,7 @@ export default function App() {
   return (
     <WearablesApp>
       <Page showHeader={false} enableSystemBarInset={false}>
-        {/* Everything sits in a narrow column on the right edge. Black is
+        {/* Everything sits in a narrow column in the top-left corner. Black is
             see-through on the glasses, so the rest of the display stays clear. */}
         <div className="side-layout">
         <div className="action-page-shell">
