@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState, type KeyboardEvent} from 'react';
 import {
   App as WearablesApp,
   Button,
@@ -13,14 +13,16 @@ import {
 } from '@wearables-ui-toolkit/mrbd';
 import {GoalRing} from './GoalRing';
 import {milestoneFor, milestoneMessage, motivation} from './steps';
+import {useDragToCorner, type Corner} from './useDragToCorner';
 import {useStepCounter, type Tracking} from './useStepCounter';
 
 const fmt = (n: number) => n.toLocaleString();
 
-// Where the square sits inside the display. "Move" cycles in this order.
-const CORNERS = ['top-right', 'bottom-right', 'bottom-left', 'top-left'] as const;
-type Corner = (typeof CORNERS)[number];
+// Where the square sits inside the display. Drag it to a corner, or pinch the
+// step panel to step through the corners in this order.
+const CORNERS: readonly Corner[] = ['top-right', 'bottom-right', 'bottom-left', 'top-left'];
 const CORNER_KEY = 'stepcoach.corner';
+const HINT_KEY = 'stepcoach.moveHintShown';
 
 function loadCorner(): Corner {
   try {
@@ -86,17 +88,60 @@ export default function App() {
 
   const [corner, setCorner] = useState<Corner>(loadCorner);
   const moveToast = useRef<number | null>(null);
-  const handleMove = () => {
-    const next = CORNERS[(CORNERS.indexOf(corner) + 1) % CORNERS.length];
+  const moveTo = (next: Corner) => {
     setCorner(next);
     try {
       localStorage.setItem(CORNER_KEY, next);
     } catch {
       // Storage blocked: the position still changes for this session.
     }
-    // Replace the previous "Moved to…" toast so quick presses never show a stale corner.
+    // Replace the previous "Moved to…" toast so quick moves never show a stale corner.
     if (moveToast.current !== null) Toast.cancel(moveToast.current);
     moveToast.current = Toast.show(`Moved to ${next.replace('-', ' ')}`);
+  };
+
+  // Main way to move: pinch, hold and drag the square toward a corner.
+  const shellRef = useRef<HTMLDivElement>(null);
+  useDragToCorner(shellRef, moveTo);
+
+  // Tell first-time wearers the square can be moved.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(HINT_KEY)) return;
+      localStorage.setItem(HINT_KEY, '1');
+    } catch {
+      return;
+    }
+    Toast.show('Tip: pinch, hold and drag to move');
+  }, []);
+
+  // Swipe-and-pinch fallback (Meta requires every action to work without drag):
+  // swipe up onto the step panel and pinch to step to the next corner.
+  // Swiping down from the panel returns to the buttons when there is nothing to scroll.
+  const onShellKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const el = e.target as HTMLElement;
+    if (el.closest('.action-dock') || e.key !== 'Enter') return;
+    e.preventDefault();
+    moveTo(CORNERS[(CORNERS.indexOf(corner) + 1) % CORNERS.length]);
+  };
+  // Runs before the panel's own scrolling, which otherwise keeps focus on it.
+  const onShellKeyDownCapture = (e: KeyboardEvent<HTMLDivElement>) => {
+    const el = e.target as HTMLElement;
+    if (e.key !== 'ArrowDown' || el.closest('.action-dock')) return;
+    // Is there unread content below? Measure the content itself: the scroll view
+    // adds overscroll room past the end, so scrollHeight alone always says yes.
+    const canScroll = [el, ...el.querySelectorAll<HTMLElement>('*')].some(node => {
+      const content = node.firstElementChild as HTMLElement | null;
+      if (!content || node.scrollHeight <= node.clientHeight + 1) return false;
+      if (!/auto|scroll/.test(getComputedStyle(node).overflowY)) return false; // decorative layers
+      return node.scrollTop + node.clientHeight < content.offsetTop + content.offsetHeight - 1;
+    });
+    if (canScroll) return;
+    const first = shellRef.current?.querySelector<HTMLElement>('.action-dock [role="button"][tabindex="0"]');
+    if (!first) return;
+    e.preventDefault();
+    e.stopPropagation();
+    first.focus();
   };
 
   const running = tracking === 'counting' || tracking === 'starting';
@@ -114,9 +159,9 @@ export default function App() {
         {/* Everything sits in a narrow column in the top-right corner. Black is
             see-through on the glasses, so the rest of the display stays clear. */}
         <div className={`side-layout corner-${corner}`}>
-        <div className="action-page-shell">
+        <div className="action-page-shell" ref={shellRef} onKeyDown={onShellKeyDown} onKeyDownCapture={onShellKeyDownCapture}>
           <GoalRing fraction={steps / goal} />
-          <ScrollView ariaLabel="Today's step progress" tabIndex={0}>
+          <ScrollView ariaLabel="Today's step progress. Pinch to move to the next corner." tabIndex={0}>
             <Panel width="100%">
               <div className="content-inset">
                 <TextView as="p" textStyle={TextStyle.BODY2_EMPHASIZED}>
@@ -146,7 +191,6 @@ export default function App() {
                 title={demo ? 'Exit' : 'Demo'}
                 onClick={demo ? coach.endDemo : coach.startDemo}
               />
-              <Button title="Move" onClick={handleMove} />
             </ButtonRail>
           </div>
         </div>

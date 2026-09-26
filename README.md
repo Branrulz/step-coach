@@ -8,7 +8,7 @@ A daily step-goal motivator for **Meta Ray-Ban Display** glasses. Part of the 10
 - Streak of days you hit your goal
 - Nudges like "526 steps to beat yesterday" and pop-ups at every 25% milestone
 - Neural Band / D-pad controls: pinch to start or pause, Demo mode to try it without walking
-- **Move** button: puts Step Coach in any corner of the display (top-right, bottom-right, bottom-left, top-left) and remembers your choice
+- **Move it:** pinch, hold and drag Step Coach toward any corner of the display and let go; it snaps there and remembers. Without drag: swipe up onto the step panel and pinch to step to the next corner (swipe down to get back to the buttons).
 
 Steps are estimated from head motion and saved only on the device.
 

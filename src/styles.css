@@ -13,6 +13,8 @@ body,
 
 body {
   overflow: hidden;
+  /* Needed for pinch-and-drag to move the square (Pointer Events drag). */
+  touch-action: none;
 }
 
 * {
@@ -112,4 +114,9 @@ body {
 
 .goal-ring-done {
   stroke: var(--uit-color-persistent-positive);
+}
+
+/* While being dragged, the square follows the pointer (transform set in useDragToCorner). */
+.action-page-shell.dragging {
+  z-index: 1;
 }
