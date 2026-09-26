@@ -47,10 +47,11 @@ body {
   min-inline-size: 0;
 }
 
-/* Top-left corner column: the rest of the display is left empty (see-through). */
+/* Top-right corner column: as high and far out as the display reaches.
+   The rest of the display is left empty (see-through). */
 .side-layout {
   display: grid;
-  grid-template-columns: minmax(0, 50%) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 50%);
   block-size: 100%;
   min-block-size: 0;
 }
@@ -61,7 +62,7 @@ body {
   position: relative;
   /* Leave room so the completion ring runs just outside the panel and buttons. */
   padding: calc(var(--ring-width) + var(--uit-spacing-xsmall));
-  grid-column: 1;
+  grid-column: 2;
   /* Size to the content and sit at the top instead of stretching to the bottom. */
   grid-template-rows: auto auto;
   align-content: start;
