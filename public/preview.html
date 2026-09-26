@@ -38,19 +38,6 @@
       radial-gradient(circle at 18% 12%, #fff4d6 0 18px, rgba(255, 244, 214, 0.35) 30px, transparent 70px),
       linear-gradient(#4f7596 0%, #8fa9bd 48%, #7d8573 50%, #5c6653 70%, #3d4438 100%);
   }
-  #scene::after {
-    /* A sidewalk and a few buildings so there is something behind the display. */
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(100deg, transparent 38%, #b7b3a8 38% 62%, transparent 62%) bottom / 100% 50% no-repeat,
-      linear-gradient(#5b6470, #5b6470) 8% 50% / 14% 22% no-repeat,
-      linear-gradient(#7a6a5c, #7a6a5c) 26% 50% / 10% 30% no-repeat,
-      linear-gradient(#e9e4d8, #e9e4d8) 78% 50% / 16% 18% no-repeat,
-      linear-gradient(#3f4a42, #3f4a42) 94% 50% / 9% 26% no-repeat;
-    background-position: bottom, 8% 49.5%, 26% 49.5%, 78% 49.5%, 94% 49.5%;
-  }
 
   /* The glasses display. 600x600 app scaled into a square "window" in the view.
      Additive blending: the display can only add light, so black is see-through. */
@@ -282,11 +269,11 @@
       stream = null;
       video.hidden = true;
       $('camera').textContent = 'Use camera';
-      status('Showing the built-in street scene.');
+      status('Showing the built-in sky and grass.');
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia) {
-      status('This browser cannot open the camera. Showing the built-in scene.');
+      status('This browser cannot open the camera. Showing the built-in sky and grass.');
       return;
     }
     try {
@@ -299,8 +286,8 @@
     } catch (e) {
       stream = null;
       status(e && e.name === 'NotAllowedError'
-        ? 'Camera permission was denied. Showing the built-in scene.'
-        : 'Could not open a camera. Showing the built-in scene.');
+        ? 'Camera permission was denied. Showing the built-in sky and grass.'
+        : 'Could not open a camera. Showing the built-in sky and grass.');
     }
   });
   document.addEventListener('visibilitychange', () => {
@@ -360,7 +347,7 @@
     }
   });
 
-  status('Showing the built-in street scene. Tap “Use camera” to look through your phone.');
+  status('Showing the built-in sky and grass. Tap “Use camera” to look through your phone.');
 })();
 </script>
 </body>
