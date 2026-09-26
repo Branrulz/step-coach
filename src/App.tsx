@@ -12,6 +12,7 @@ import {
   TextView,
   Toast,
 } from '@wearables-ui-toolkit/mrbd';
+import {GoalRing} from './GoalRing';
 import {milestoneFor, milestoneMessage, motivation} from './steps';
 import {useStepCounter, type Tracking} from './useStepCounter';
 
@@ -85,6 +86,7 @@ export default function App() {
             see-through on the glasses, so the rest of the display stays clear. */}
         <div className="side-layout">
         <div className="action-page-shell">
+          <GoalRing fraction={steps / goal} />
           <ScrollView ariaLabel="Today's step progress" tabIndex={0}>
             <Panel width="100%">
               <div className="content-inset">
