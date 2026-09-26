@@ -152,7 +152,7 @@
 
   <section id="bar" aria-label="Preview settings">
     <h1>Look-through preview</h1>
-    <p>An approximation of Meta Ray-Ban Display: a glowing, see-through panel in your right eye, below and right of where you look.</p>
+    <p>An approximation of Meta Ray-Ban Display: a glowing, see-through panel in your right eye, below and right of where you look. Drag Step Coach to move it, or press ▲ then ●.</p>
     <div class="row">
       <button class="primary" id="camera">Use camera</button>
       <button id="lensBtn" aria-pressed="true">Lens</button>
@@ -318,10 +318,13 @@
     // Tapping the pad pulls focus out of the frame, and the app then parks focus on
     // its outer container. Remember which action was focused and send keys there.
     // Standalone, the app starts on its first action, so the first press lands there.
-    const actions = [...doc.querySelectorAll('.action-dock [role="button"][tabindex="0"]')];
-    if (!actions.length) return;
+    // Everything the wearer can land on: the step panel (pinch it to move the
+    // square) and the buttons. The first press starts on the first button.
+    const actions = [...doc.querySelectorAll('.action-page-shell [tabindex="0"]')];
+    const firstButton = doc.querySelector('.action-dock [role="button"][tabindex="0"]');
+    if (!actions.length || !firstButton) return;
     if (!actions.includes(focusedAction)) {
-      focusedAction = actions[0];
+      focusedAction = firstButton;
       focusedAction.focus({preventScroll: true});
       return;
     }
