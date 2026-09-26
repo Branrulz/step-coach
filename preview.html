@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#000000" />
+<title>Step Coach Look-Through Preview</title>
+<meta name="description" content="Approximate how Step Coach looks on Meta Ray-Ban Display glasses, over your phone's camera." />
+<style>
+  :root {
+    --panel: rgba(12, 14, 16, 0.86);
+    --text: #f2f4f5;
+    --muted: #a9b1b6;
+    --accent: #2ee6c8;
+    --line: rgba(255, 255, 255, 0.16);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #000;
+    color: var(--text);
+    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* The world: camera feed or a built-in test scene. */
+  #world, #scene {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  #scene {
+    background:
+      radial-gradient(circle at 18% 12%, #fff4d6 0 18px, rgba(255, 244, 214, 0.35) 30px, transparent 70px),
+      linear-gradient(#4f7596 0%, #8fa9bd 48%, #7d8573 50%, #5c6653 70%, #3d4438 100%);
+  }
+
+  /* The glasses display. 600x600 app scaled into a square "window" in the view.
+     Additive blending: the display can only add light, so black is see-through. */
+  #display {
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border: 0;
+    transform-origin: top left;
+    mix-blend-mode: plus-lighter;
+    pointer-events: auto;
+    background: transparent;
+  }
+  @supports not (mix-blend-mode: plus-lighter) {
+    #display { mix-blend-mode: screen; }
+  }
+  body.no-additive #display { mix-blend-mode: normal; }
+  #frame {
+    position: fixed;
+    border: 1px dashed rgba(255, 255, 255, 0.35);
+    pointer-events: none;
+    display: none;
+  }
+  body.show-frame #frame { display: block; }
+
+  /* Lens: Wayfarer-shaped right lens with the frame around it. */
+  #lens {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  body.no-lens #lens { display: none; }
+
+  /* Controls */
+  #bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(8px);
+  }
+  body.hidden-ui #bar { display: none; }
+  #bar h1 { font-size: 16px; margin: 0 0 2px; }
+  #bar p { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  button {
+    font: inherit;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 14px;
+    min-height: 40px;
+  }
+  button.primary { background: var(--accent); color: #042a24; border-color: transparent; font-weight: 600; }
+  button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+  label.slider { display: grid; grid-template-columns: 7.5em 1fr 3em; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+  label.slider output { text-align: right; color: var(--text); }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .sliders { display: grid; gap: 6px; margin: 8px 0 10px; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  #status { color: var(--muted); font-size: 12px; min-height: 1.2em; }
+
+  /* Neural Band stand-in: D-pad + pinch */
+  #pad {
+    position: fixed;
+    right: 16px;
+    top: calc(16px + env(safe-area-inset-top));
+    display: grid;
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(3, 44px);
+    gap: 4px;
+  }
+  body.hidden-ui #pad { opacity: 0.35; }
+  #pad button { padding: 0; min-height: 0; border-radius: 12px; background: var(--panel); }
+  #pad .up { grid-area: 1 / 2; }
+  #pad .left { grid-area: 2 / 1; }
+  #pad .pinch { grid-area: 2 / 2; border-radius: 50%; color: var(--accent); }
+  #pad .right { grid-area: 2 / 3; }
+  #pad .down { grid-area: 3 / 2; }
+  #showUi {
+    position: fixed;
+    left: 16px;
+    top: calc(16px + env(safe-area-inset-top));
+    display: none;
+    background: var(--panel);
+  }
+  body.hidden-ui #showUi { display: block; }
+</style>
+</head>
+<body>
+  <div id="scene" aria-hidden="true"></div>
+  <video id="world" playsinline muted autoplay hidden></video>
+  <div id="frame" aria-hidden="true"></div>
+  <svg id="lens" aria-hidden="true"></svg>
+  <iframe id="display" src="./" title="Step Coach as shown on the glasses display" scrolling="no"></iframe>
+
+  <div id="pad" role="group" aria-label="Neural Band controls">
+    <button class="up" data-key="ArrowUp" aria-label="Swipe up">▲</button>
+    <button class="left" data-key="ArrowLeft" aria-label="Swipe left">◀</button>
+    <button class="pinch" data-key="Enter" aria-label="Pinch (select)">●</button>
+    <button class="right" data-key="ArrowRight" aria-label="Swipe right">▶</button>
+    <button class="down" data-key="ArrowDown" aria-label="Swipe down">▼</button>
+  </div>
+
+  <button id="showUi">Settings</button>
+
+  <section id="bar" aria-label="Preview settings">
+    <h1>Look-through preview</h1>
+    <p>An approximation of Meta Ray-Ban Display: a glowing, see-through panel in your right eye, below and right of where you look. Drag Step Coach to move it, or press ▲ then ●.</p>
+    <div class="row">
+      <button class="primary" id="camera">Use camera</button>
+      <button id="lensBtn" aria-pressed="true">Lens</button>
+      <button id="additive" aria-pressed="true">See-through</button>
+      <button id="frameBtn" aria-pressed="false">Show edge</button>
+      <button id="hide">Hide settings</button>
+    </div>
+    <details>
+    <summary>Adjust brightness, sunlight, size and position</summary>
+    <div class="sliders">
+      <label class="slider">Display brightness <input id="brightness" type="range" min="0.3" max="1.6" step="0.05" value="1.3" /><output></output></label>
+      <label class="slider">World brightness <input id="sun" type="range" min="0.3" max="2" step="0.05" value="0.6" /><output></output></label>
+      <label class="slider">Lens tint <input id="tint" type="range" min="0" max="0.8" step="0.05" value="0" /><output></output></label>
+      <label class="slider">Display size <input id="size" type="range" min="20" max="80" step="1" value="34" /><output></output></label>
+      <label class="slider">Across ↔ <input id="x" type="range" min="0" max="100" step="1" value="72" /><output></output></label>
+      <label class="slider">Up ↕ <input id="y" type="range" min="0" max="100" step="1" value="38" /><output></output></label>
+    </div>
+    </details>
+    <div id="status" role="status"></div>
+  </section>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const display = $('display'), frame = $('frame'), video = $('world'), scene = $('scene');
+  const status = msg => { $('status').textContent = msg; };
+  // preview.html?demo opens the app inside already running Demo mode.
+  if (new URLSearchParams(location.search).has('demo')) display.src = './?demo';
+  const SETTINGS_KEY = 'stepcoach.preview.v3';
+  const sliders = ['brightness', 'sun', 'tint', 'size', 'x', 'y'];
+
+  // Restore slider positions (per-viewer convenience only).
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    for (const id of sliders) if (saved[id] != null) $(id).value = saved[id];
+  } catch (e) {}
+
+  function layout() {
+    const w = window.innerWidth, h = window.innerHeight;
+    // "Display size" is the share of the view width the 600x600 panel covers.
+    // About 20 degrees of a portrait phone camera's ~50 degree width lands near 40%.
+    const side = Math.min(w, h) * (+$('size').value / 100) * (w < h ? 1 : 0.9) || 1;
+    const scale = side / 600;
+    const cx = (+$('x').value / 100) * w, cy = (1 - +$('y').value / 100) * h;
+    const left = Math.round(cx - side / 2), top = Math.round(cy - side / 2);
+    display.style.transform = `translate(${left}px, ${top}px) scale(${scale})`;
+    Object.assign(frame.style, {left: left + 'px', top: top + 'px', width: side + 'px', height: side + 'px'});
+    // Waveguide light is slightly soft, not pin-sharp like a phone screen.
+    display.style.filter = `brightness(${$('brightness').value}) blur(${(0.5 / scale).toFixed(2)}px)`;
+    // Tint darkens the world through the lens, but the display is projected on the
+    // inside of the lens, so it is not dimmed. That is why it stays readable in sun.
+    const sun = +$('sun').value, tint = +$('tint').value;
+    video.style.filter = scene.style.filter =
+      `brightness(${(sun * (1 - 0.8 * tint)).toFixed(3)}) saturate(${(1 - 0.3 * tint).toFixed(3)}) sepia(${(0.25 * tint).toFixed(3)})`;
+    for (const id of sliders) {
+      const v = +$(id).value;
+      $(id).nextElementSibling.textContent =
+        id === 'brightness' || id === 'sun' ? v.toFixed(2) + '×' : id === 'tint' ? Math.round(v * 100) + '%' : v + '%';
+    }
+    drawLens(w, h);
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(Object.fromEntries(sliders.map(id => [id, $(id).value]))));
+    } catch (e) {}
+  }
+  function drawLens(w, h) {
+    // Right lens seen from behind: straight-ish top, rounded outer edge, narrower
+    // toward the nose (left). Proportions loosely follow a Wayfarer.
+    const L = w * 0.05, R = w * 0.96, T = h * 0.08, B = h * 0.9;
+    const W = R - L, H = B - T;
+    const P = (x, y) => `${x.toFixed(1)},${y.toFixed(1)}`;
+    const d = [
+      `M ${P(L + 0.06 * W, T + 0.01 * H)}`,
+      `C ${P(L + 0.4 * W, T - 0.03 * H)} ${P(R - 0.22 * W, T - 0.04 * H)} ${P(R - 0.03 * W, T + 0.02 * H)}`,
+      `C ${P(R + 0.015 * W, T + 0.28 * H)} ${P(R, B - 0.3 * H)} ${P(R - 0.1 * W, B - 0.05 * H)}`,
+      `C ${P(R - 0.32 * W, B + 0.03 * H)} ${P(L + 0.34 * W, B + 0.02 * H)} ${P(L + 0.12 * W, B - 0.1 * H)}`,
+      `C ${P(L - 0.015 * W, B - 0.32 * H)} ${P(L - 0.02 * W, T + 0.22 * H)} ${P(L + 0.06 * W, T + 0.01 * H)}`,
+      'Z',
+    ].join(' ');
+    $('lens').setAttribute('viewBox', `0 0 ${w} ${h}`);
+    $('lens').innerHTML = `
+      <defs>
+        <mask id="lensHole"><rect width="${w}" height="${h}" fill="#fff"/><path d="${d}" fill="#000"/></mask>
+        <clipPath id="lensClip"><path d="${d}"/></clipPath>
+        <linearGradient id="acetate" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1b1a19"/><stop offset="0.5" stop-color="#0b0a0a"/><stop offset="1" stop-color="#151413"/>
+        </linearGradient>
+        <radialGradient id="vignette" cx="0.55" cy="0.48" r="0.62">
+          <stop offset="0.6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.38"/>
+        </radialGradient>
+        <linearGradient id="glare" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+          <stop offset="0.28" stop-color="#fff" stop-opacity="0.07"/>
+          <stop offset="0.36" stop-color="#fff" stop-opacity="0"/>
+          <stop offset="0.7" stop-color="#fff" stop-opacity="0"/>
+          <stop offset="0.76" stop-color="#fff" stop-opacity="0.035"/>
+          <stop offset="0.82" stop-color="#fff" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <g clip-path="url(#lensClip)">
+        <rect width="${w}" height="${h}" fill="url(#vignette)"/>
+        <rect width="${w}" height="${h}" fill="url(#glare)"/>
+      </g>
+      <path d="${d}" fill="none" stroke="#000" stroke-opacity="0.55" stroke-width="${Math.max(8, w * 0.012)}"/>
+      <rect width="${w}" height="${h}" fill="url(#acetate)" mask="url(#lensHole)"/>
+      <path d="${d}" fill="none" stroke="#fff" stroke-opacity="0.08" stroke-width="1.5"/>`;
+  }
+  for (const id of sliders) $(id).addEventListener('input', layout);
+  window.addEventListener('resize', layout);
+  layout();
+
+  // Camera as the world behind the display.
+  let stream = null;
+  $('camera').addEventListener('click', async () => {
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+      video.hidden = true;
+      $('camera').textContent = 'Use camera';
+      status('Showing the built-in sky and grass.');
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      status('This browser cannot open the camera. Showing the built-in sky and grass.');
+      return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}}, audio: false});
+      video.srcObject = stream;
+      video.hidden = false;
+      await video.play().catch(() => {});
+      $('camera').textContent = 'Use test scene';
+      status('Camera on. Nothing is recorded or uploaded.');
+    } catch (e) {
+      stream = null;
+      status(e && e.name === 'NotAllowedError'
+        ? 'Camera permission was denied. Showing the built-in sky and grass.'
+        : 'Could not open a camera. Showing the built-in sky and grass.');
+    }
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && stream) $('camera').click();
+  });
+
+  $('additive').addEventListener('click', e => {
+    const on = document.body.classList.toggle('no-additive') === false;
+    e.currentTarget.setAttribute('aria-pressed', String(on));
+    status(on ? 'See-through: black is clear and the display glows over the world, like the glasses.' : 'Screen view: the app on a solid black panel, like the screenshots.');
+  });
+  $('lensBtn').addEventListener('click', e => {
+    const on = document.body.classList.toggle('no-lens') === false;
+    e.currentTarget.setAttribute('aria-pressed', String(on));
+  });
+  $('frameBtn').addEventListener('click', e => {
+    const on = document.body.classList.toggle('show-frame');
+    e.currentTarget.setAttribute('aria-pressed', String(on));
+  });
+  $('hide').addEventListener('click', () => document.body.classList.add('hidden-ui'));
+  $('showUi').addEventListener('click', () => document.body.classList.remove('hidden-ui'));
+
+  // Neural Band stand-in: send D-pad keys into the app, pinch clicks the focused control.
+  function press(key) {
+    const doc = display.contentDocument, win = display.contentWindow;
+    if (!doc || !win) return;
+    win.focus();
+    // Tapping the pad pulls focus out of the frame, and the app then parks focus on
+    // its outer container. Remember which action was focused and send keys there.
+    // Standalone, the app starts on its first action, so the first press lands there.
+    // Everything the wearer can land on: the step panel (pinch it to move the
+    // square) and the buttons. The first press starts on the first button.
+    const actions = [...doc.querySelectorAll('.action-page-shell [tabindex="0"]')];
+    const firstButton = doc.querySelector('.action-dock [role="button"][tabindex="0"]');
+    if (!actions.length || !firstButton) return;
+    if (!actions.includes(focusedAction)) {
+      focusedAction = firstButton;
+      focusedAction.focus({preventScroll: true});
+      return;
+    }
+    const target = focusedAction;
+    target.focus({preventScroll: true});
+    const keyCode = {ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, Enter: 13}[key];
+    const opts = {key, code: key, keyCode, which: keyCode, bubbles: true, cancelable: true, view: win};
+    const down = new win.KeyboardEvent('keydown', opts);
+    const allowed = target.dispatchEvent(down);
+    target.dispatchEvent(new win.KeyboardEvent('keyup', opts));
+    if (actions.includes(doc.activeElement)) focusedAction = doc.activeElement;
+    if (key === 'Enter' && allowed) focusedAction.click();
+  }
+  let focusedAction = null;
+  for (const b of document.querySelectorAll('#pad button')) {
+    b.addEventListener('click', () => press(b.dataset.key));
+  }
+  // Physical keys on a desktop work too.
+  window.addEventListener('keydown', e => {
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key) && e.target === document.body) {
+      e.preventDefault();
+      press(e.key);
+    }
+  });
+
+  status('Showing the built-in sky and grass. Tap “Use camera” to look through your phone.');
+})();
+</script>
+</body>
+</html>
