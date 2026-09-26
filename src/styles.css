@@ -47,14 +47,18 @@ body {
   min-inline-size: 0;
 }
 
-/* Right-edge column: the left of the display is left empty (see-through). */
+/* Top-left corner column: the rest of the display is left empty (see-through). */
 .side-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 50%);
+  grid-template-columns: minmax(0, 50%) minmax(0, 1fr);
   block-size: 100%;
   min-block-size: 0;
 }
 
 .side-layout > .action-page-shell {
-  grid-column: 2;
+  grid-column: 1;
+  /* Size to the content and sit at the top instead of stretching to the bottom. */
+  grid-template-rows: auto auto;
+  align-content: start;
+  max-block-size: 100%;
 }
