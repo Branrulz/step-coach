@@ -4,8 +4,8 @@ type Box = {width: number; height: number; stroke: number; radius: number};
 
 /**
  * Completion ring traced around its parent's border, filling clockwise from the
- * top-left corner as `fraction` goes from 0 to 1. Decorative: the labeled
- * ProgressIndicator inside the panel carries the accessible value.
+ * top-left corner as `fraction` goes from 0 to 1. Decorative: the "% of goal"
+ * text inside the panel carries the same value for screen readers.
  *
  * Stroke width and corner radius come from the parent's --ring-width and
  * --ring-radius custom properties so all geometry stays on Toolkit tokens.
