@@ -71,6 +71,22 @@ body {
   max-block-size: 100%;
 }
 
+/* Corner the wearer picked with "Move". Default (above) is top-right. */
+.side-layout.corner-top-left,
+.side-layout.corner-bottom-left {
+  grid-template-columns: minmax(0, 50%) minmax(0, 1fr);
+}
+
+.side-layout.corner-top-left > .action-page-shell,
+.side-layout.corner-bottom-left > .action-page-shell {
+  grid-column: 1;
+}
+
+.side-layout.corner-bottom-left > .action-page-shell,
+.side-layout.corner-bottom-right > .action-page-shell {
+  align-self: end;
+}
+
 /* Completion ring around the square (GoalRing). */
 .goal-ring {
   position: absolute;
