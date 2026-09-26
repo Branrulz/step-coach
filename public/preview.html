@@ -179,6 +179,8 @@
   const $ = id => document.getElementById(id);
   const display = $('display'), frame = $('frame'), video = $('world'), scene = $('scene');
   const status = msg => { $('status').textContent = msg; };
+  // preview.html?demo opens the app inside already running Demo mode.
+  if (new URLSearchParams(location.search).has('demo')) display.src = './?demo';
   const SETTINGS_KEY = 'stepcoach.preview.v3';
   const sliders = ['brightness', 'sun', 'tint', 'size', 'x', 'y'];
 

@@ -104,8 +104,16 @@ export default function App() {
   const shellRef = useRef<HTMLDivElement>(null);
   useDragToCorner(shellRef, moveTo);
 
+  // A shared "?demo" link opens straight into Demo mode (for videos and listings).
+  const openedAsDemo = useRef(new URLSearchParams(window.location.search).has('demo'));
+  const {startDemo} = coach;
+  useEffect(() => {
+    if (openedAsDemo.current) startDemo();
+  }, [startDemo]);
+
   // Tell first-time wearers the square can be moved.
   useEffect(() => {
+    if (openedAsDemo.current) return;
     try {
       if (localStorage.getItem(HINT_KEY)) return;
       localStorage.setItem(HINT_KEY, '1');
