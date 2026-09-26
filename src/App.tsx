@@ -5,7 +5,6 @@ import {
   ButtonRail,
   Page,
   Panel,
-  ProgressIndicator,
   ScrollView,
   TextColor,
   TextStyle,
@@ -93,18 +92,9 @@ export default function App() {
                 <TextView as="p" textStyle={TextStyle.BODY2_EMPHASIZED}>
                   {countOf(steps, 'step', 'steps')} today{demo ? ' (demo)' : ''}
                 </TextView>
-                <div className="stat">
-                  <TextView as="p" id="goal-progress" textStyle={TextStyle.META1}>
-                    {percent}% of {fmt(goal)} goal
-                  </TextView>
-                  <ProgressIndicator
-                    value={steps}
-                    maximumValue={goal}
-                    animated={false}
-                    announceUpdatesForAccessibility={false}
-                    aria-labelledby="goal-progress"
-                  />
-                </div>
+                <TextView as="p" textStyle={TextStyle.META1}>
+                  {percent}% of {fmt(goal)} goal
+                </TextView>
                 <TextView as="p" textStyle={TextStyle.BODY2}>
                   {motivation(steps, goal, yesterday)}
                 </TextView>
